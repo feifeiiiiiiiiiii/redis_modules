@@ -128,10 +128,35 @@ void *BtreeTypeRdbLoad(RedisModuleIO *rdb, int encver) {
         RedisModule_LogIOError(rdb, "warning","Can't load data with version %d", encver);
         return NULL;
     }
-    return NULL;
+
+    struct BtreeObject *bto = createBtreeObject();
+    int size = 0;
+    uint64_t elements = RedisModule_LoadUnsigned(rdb);
+    while(elements--) {
+        long long key, value;
+        key = RedisModule_LoadSigned(rdb);
+        value = RedisModule_LoadSigned(rdb);
+        elem e;
+        e.key = key;
+        e.value = value;
+        kb_putp(redismodule_btree, bto->b, &e);
+    }
+    return bto;
 }
 
 void BtreeTypeRdbSave(RedisModuleIO *rdb, void *value) {
+    struct BtreeObject *bto = value;
+    kbitr_t itr;
+    elem *p;
+
+    RedisModule_SaveUnsigned(rdb, kb_size(bto->b));
+    kb_itr_first(redismodule_btree, bto->b, &itr); // get an iterator pointing to the first
+    for (; kb_itr_valid(&itr); kb_itr_next(redismodule_btree, bto->b, &itr)) { // move on
+        p = &kb_itr_key(elem, &itr);
+        //RedisModule_SaveUnsigned(rdb, 2);
+        RedisModule_SaveSigned(rdb, p->key);
+        RedisModule_SaveSigned(rdb, p->value);
+    }
 }
 
 void BtreeTypeAofRewrite(RedisModuleIO *aof, RedisModuleString *key, void *value) {
