@@ -64,17 +64,16 @@ int BtreeTypeSet_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
         return RedisModule_ReplyWithError(ctx,"ERR invalid value: must be a signed 64 bit integer");
     }
 
-    elem e;
+    elem e, *p;
     e.key = field;
     e.value = value;
-    //e.value = RedisModule_CreateStringFromString(ctx, argv[3]);
 
-    if(kb_getp(redismodule_btree, bto->b, &e) != NULL) {
-        return RedisModule_ReplyWithError(ctx, "ERR field exist");
+    p = kb_getp(redismodule_btree, bto->b, &e);
+    if(p != NULL) {
+        p->value = value;
+    } else {
+        kb_putp(redismodule_btree, bto->b, &e);
     }
-
-    //RedisModule_Log(ctx, "warning","put value");
-    kb_putp(redismodule_btree, bto->b, &e);
 
     RedisModule_ReplyWithSimpleString(ctx, "OK");
 
@@ -98,7 +97,7 @@ int BtreeTypeDel_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
 
     struct BtreeObject *bto;
     if (type == REDISMODULE_KEYTYPE_EMPTY) {
-        return RedisModule_ReplyWithError(ctx,"ERR not found");
+        return RedisModule_ReplyWithNull(ctx);
     } else {
         bto = RedisModule_ModuleTypeGetValue(key);
     }
@@ -120,7 +119,6 @@ int BtreeTypeDel_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
 
     return REDISMODULE_OK;
 }
-
 
 
 /* BTREE_1_1.get key field */
@@ -147,7 +145,7 @@ int BtreeTypeGet_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     bto = RedisModule_ModuleTypeGetValue(key);
 
     if(bto == NULL) {
-        return RedisModule_ReplyWithError(ctx, "ERR not found");
+        return RedisModule_ReplyWithNull(ctx);
     }
 
     elem e, *p;
@@ -155,7 +153,7 @@ int BtreeTypeGet_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
 
     p = kb_getp(redismodule_btree, bto->b, &e);
     if(p == NULL) {
-        return RedisModule_ReplyWithError(ctx, "ERR not found");
+        return RedisModule_ReplyWithNull(ctx);
     }
     RedisModule_ReplyWithLongLong(ctx, p->value);
 
