@@ -10,8 +10,8 @@
 #include "redismodule.h"
 
 typedef struct {
-    uint32_t key;
-    uint32_t value;
+    int32_t key;
+    int32_t value;
 } elem;
 
 #define redismodule_cmp(a, b) (((b).key < (a).key) - ((a).key < (b).key))
