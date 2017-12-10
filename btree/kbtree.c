@@ -48,7 +48,7 @@ int BtreeTypeSet_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
 
     struct BtreeObject *bto;
     if (type == REDISMODULE_KEYTYPE_EMPTY) {
-        RedisModule_Log(ctx, "warning","init btree");
+        //RedisModule_Log(ctx, "warning","init btree");
         bto = createBtreeObject();
         RedisModule_ModuleTypeSetValue(key,BtreeType, bto);
     } else {
@@ -57,11 +57,11 @@ int BtreeTypeSet_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
 
     long long field, value;
     if ((RedisModule_StringToLongLong(argv[2],&field) != REDISMODULE_OK)) {
-        return RedisModule_ReplyWithError(ctx,"ERR invalid value: must be a signed 64 bit integer");
+        return RedisModule_ReplyWithError(ctx,"-ERR invalid value: must be a signed 64 bit integer");
     }
 
     if ((RedisModule_StringToLongLong(argv[3],&value) != REDISMODULE_OK)) {
-        return RedisModule_ReplyWithError(ctx,"ERR invalid value: must be a signed 64 bit integer");
+        return RedisModule_ReplyWithError(ctx,"-ERR invalid value: must be a signed 64 bit integer");
     }
 
     elem e;
@@ -73,13 +73,55 @@ int BtreeTypeSet_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
         return RedisModule_ReplyWithError(ctx, "-ERR field exist");
     }
 
-    RedisModule_Log(ctx, "warning","put value");
+    //RedisModule_Log(ctx, "warning","put value");
     kb_putp(redismodule_btree, bto->b, &e);
 
     RedisModule_ReplyWithSimpleString(ctx, "OK");
 
     return REDISMODULE_OK;
 }
+
+/* BTREE_1_1.DEL key field */
+int BtreeTypeDel_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    RedisModule_AutoMemory(ctx); /* Use automatic memory management. */
+
+    if (argc != 3) return RedisModule_WrongArity(ctx);
+    RedisModuleKey *key = RedisModule_OpenKey(ctx,argv[1],
+        REDISMODULE_READ|REDISMODULE_WRITE);
+
+    int type = RedisModule_KeyType(key);
+    if (type != REDISMODULE_KEYTYPE_EMPTY &&
+        RedisModule_ModuleTypeGetType(key) != BtreeType)
+    {
+        return RedisModule_ReplyWithError(ctx,REDISMODULE_ERRORMSG_WRONGTYPE);
+    }
+
+    struct BtreeObject *bto;
+    if (type == REDISMODULE_KEYTYPE_EMPTY) {
+        return RedisModule_ReplyWithError(ctx,"-ERR not found");
+    } else {
+        bto = RedisModule_ModuleTypeGetValue(key);
+    }
+
+    long long field;
+    if ((RedisModule_StringToLongLong(argv[2],&field) != REDISMODULE_OK)) {
+        return RedisModule_ReplyWithError(ctx,"-ERR invalid value: must be a signed 64 bit integer");
+    }
+
+    elem e;
+    e.key = field;
+    if (kb_getp(redismodule_btree, bto->b, &e) == NULL) {
+        return RedisModule_ReplyWithLongLong(ctx, 0);
+    }
+
+    kb_delp(redismodule_btree, bto->b, &e);
+
+    RedisModule_ReplyWithLongLong(ctx, 1);
+
+    return REDISMODULE_OK;
+}
+
+
 
 /* BTREE_1_1.get key field */
 int BtreeTypeGet_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
@@ -199,6 +241,10 @@ int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) 
 
     if (RedisModule_CreateCommand(ctx,"btree_1_1.set",
         BtreeTypeSet_RedisCommand,"write deny-oom",1,1,1) == REDISMODULE_ERR)
+        return REDISMODULE_ERR;
+
+    if (RedisModule_CreateCommand(ctx,"btree_1_1.del",
+        BtreeTypeDel_RedisCommand,"write deny-oom",1,1,1) == REDISMODULE_ERR)
         return REDISMODULE_ERR;
 
     if (RedisModule_CreateCommand(ctx,"btree_1_1.get",
