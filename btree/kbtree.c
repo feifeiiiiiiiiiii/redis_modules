@@ -57,11 +57,11 @@ int BtreeTypeSet_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
 
     long long field, value;
     if ((RedisModule_StringToLongLong(argv[2],&field) != REDISMODULE_OK)) {
-        return RedisModule_ReplyWithError(ctx,"-ERR invalid value: must be a signed 64 bit integer");
+        return RedisModule_ReplyWithError(ctx,"ERR invalid value: must be a signed 64 bit integer");
     }
 
     if ((RedisModule_StringToLongLong(argv[3],&value) != REDISMODULE_OK)) {
-        return RedisModule_ReplyWithError(ctx,"-ERR invalid value: must be a signed 64 bit integer");
+        return RedisModule_ReplyWithError(ctx,"ERR invalid value: must be a signed 64 bit integer");
     }
 
     elem e;
@@ -70,7 +70,7 @@ int BtreeTypeSet_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     //e.value = RedisModule_CreateStringFromString(ctx, argv[3]);
 
     if(kb_getp(redismodule_btree, bto->b, &e) != NULL) {
-        return RedisModule_ReplyWithError(ctx, "-ERR field exist");
+        return RedisModule_ReplyWithError(ctx, "ERR field exist");
     }
 
     //RedisModule_Log(ctx, "warning","put value");
@@ -98,14 +98,14 @@ int BtreeTypeDel_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
 
     struct BtreeObject *bto;
     if (type == REDISMODULE_KEYTYPE_EMPTY) {
-        return RedisModule_ReplyWithError(ctx,"-ERR not found");
+        return RedisModule_ReplyWithError(ctx,"ERR not found");
     } else {
         bto = RedisModule_ModuleTypeGetValue(key);
     }
 
     long long field;
     if ((RedisModule_StringToLongLong(argv[2],&field) != REDISMODULE_OK)) {
-        return RedisModule_ReplyWithError(ctx,"-ERR invalid value: must be a signed 64 bit integer");
+        return RedisModule_ReplyWithError(ctx,"ERR invalid value: must be a signed 64 bit integer");
     }
 
     elem e;
@@ -147,7 +147,7 @@ int BtreeTypeGet_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
     bto = RedisModule_ModuleTypeGetValue(key);
 
     if(bto == NULL) {
-        return RedisModule_ReplyWithError(ctx, "-ERR not found");
+        return RedisModule_ReplyWithError(ctx, "ERR not found");
     }
 
     elem e, *p;
@@ -155,7 +155,7 @@ int BtreeTypeGet_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int
 
     p = kb_getp(redismodule_btree, bto->b, &e);
     if(p == NULL) {
-        return RedisModule_ReplyWithError(ctx, "-ERR not found");
+        return RedisModule_ReplyWithError(ctx, "ERR not found");
     }
     RedisModule_ReplyWithLongLong(ctx, p->value);
 
